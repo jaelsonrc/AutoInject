@@ -1,0 +1,22 @@
+## Ignore Visual Studio files
+.vs/
+*.user
+*.suo
+
+## Ignore build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+
+## Ignore packages
+*.nupkg
+
+## Ignore temporary files
+*.
+*.log
+*.tmp
+*.bak
+
+## Ignorerider files
+*.DotSettings.user 
