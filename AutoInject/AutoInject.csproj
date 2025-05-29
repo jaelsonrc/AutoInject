@@ -4,7 +4,31 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    
+    <!-- NuGet Package Information -->
+    <PackageId>JaelsonRC.AutoInject</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Jaelson RC</Authors>
+    <Company>Jaelson RC</Company>
+    <Description>A lightweight library that brings attribute-based dependency injection to .NET, eliminating the need for constructor injection boilerplate. Use [AutoInject] and [Injectable] attributes to simplify your dependency injection.</Description>
+    <PackageTags>dependency-injection;di;autoinject;attributes;aspnetcore;dotnet;jaelsonrc</PackageTags>
+    <PackageProjectUrl>https://github.com/jaelsonrc/AutoInject</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jaelsonrc/AutoInject</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>Initial release of JaelsonRC.AutoInject library. Features include attribute-based dependency injection, automatic service registration, and seamless ASP.NET Core integration.</PackageReleaseNotes>
+    
+    <!-- Build Configuration -->
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />

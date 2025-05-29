@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 
 namespace AutoInject.Middlewares
 {
@@ -23,3 +23,4 @@ namespace AutoInject.Middlewares
             }
         }
     }
+} 

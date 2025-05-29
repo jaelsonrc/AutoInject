@@ -1,0 +1,24 @@
+## Ignore Visual Studio files
+.vs/
+*.user
+*.suo
+
+## Ignore build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+
+## Ignore test results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+## Ignore temporary files
+*.tmp
+*.log
+*.bak
+
+## Ignore rider files
+*.DotSettings.user 
