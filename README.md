@@ -68,7 +68,7 @@ public class OrderService
 
 ```bash
 # Coming soon to NuGet
-Install-Package AutoInject
+Install-Package JZen.AutoInject
 ```
 
 Or add the project reference:
