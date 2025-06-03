@@ -4,7 +4,7 @@
 
 /.vs/AutoInject
 
-# Ignore environment file
+# Ignore environment file with API keys
 .env
 
 # NuGet packages
@@ -18,5 +18,18 @@
 *.user
 *.suo
 
+# Publishing scripts with sensitive data
 publish-nuget.ps1
 publish-nuget.sh
+publish-release.sh
+publish-now.sh
+publish-direct.ps1
+execute-publish.sh
+commit-and-publish.sh
+commit-and-publish.ps1
+publish-commands.md
+PUBLICACAO-INSTRUCOES.md
+
+# Ignore memory bank and cursor rules
+memory-bank/
+.cursorrules

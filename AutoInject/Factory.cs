@@ -1,4 +1,4 @@
-﻿using AutoInject.Attributes;
+using AutoInject.Attributes;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -7,12 +7,13 @@ using System.Reflection;
 namespace AutoInject
 {
     /// <summary>
-    /// Factory responsible for performing dependency injection in properties marked with [Inject]
+    /// Factory responsible for performing dependency injection in properties marked with [Injectable]
     /// </summary>
     public static class Factory
     {
         private static IServiceProvider? _provider;
         private static readonly Dictionary<string, IServiceScope> _requestScopes = [];
+        private static readonly Dictionary<Type, Type> _autoRegisteredTypes = [];
         private static readonly object _lock = new();
 
         /// <summary>
@@ -98,10 +99,12 @@ namespace AutoInject
                 }
             }
         }
+
         /// <summary>
         /// Gets a service from the DI container.
         /// First tries to resolve directly. If it fails because it is a scoped service,
         /// it creates a scope per HTTP request and keeps it active.
+        /// If the service is not registered, it automatically finds and registers the first implementation.
         /// </summary>
         private static object? GetService(Type serviceType, object instance)
         {
@@ -112,8 +115,13 @@ namespace AutoInject
 
             try
             {
-                // First tries to resolve directly
-                return _provider.GetService(serviceType);
+                // First tries to resolve directly from the DI container
+                var service = _provider.GetService(serviceType);
+                if (service != null)
+                    return service;
+
+                // If service is null, try to auto-resolve
+                return TryAutoResolve(serviceType);
             }
             catch (InvalidOperationException ex) when (ex.Message.Contains("scoped service") || ex.Message.Contains("root provider"))
             {
@@ -128,8 +136,168 @@ namespace AutoInject
                     }
                 }
 
-                return _requestScopes[requestId].ServiceProvider.GetService(serviceType);
+                var service = _requestScopes[requestId].ServiceProvider.GetService(serviceType);
+                if (service != null)
+                    return service;
+
+                // If still null, try to auto-resolve with scoped behavior
+                return TryAutoResolveScoped(serviceType, requestId);
             }
+        }
+
+        /// <summary>
+        /// Tries to automatically resolve a service by finding and instantiating its first implementation
+        /// </summary>
+        private static object? TryAutoResolve(Type serviceType)
+        {
+            if (!serviceType.IsInterface)
+                return null;
+
+            lock (_lock)
+            {
+                // Check if we already found an implementation for this type
+                if (_autoRegisteredTypes.TryGetValue(serviceType, out var cachedImplementationType))
+                {
+                    return CreateInstance(cachedImplementationType);
+                }
+
+                // Find the first implementation
+                var implementationType = FindFirstImplementation(serviceType);
+                if (implementationType == null)
+                    return null;
+
+                // Cache the mapping for future use
+                _autoRegisteredTypes[serviceType] = implementationType;
+
+                return CreateInstance(implementationType);
+            }
+        }
+
+        /// <summary>
+        /// Tries to automatically resolve a service with scoped behavior
+        /// </summary>
+        private static object? TryAutoResolveScoped(Type serviceType, string requestId)
+        {
+            if (!serviceType.IsInterface)
+                return null;
+
+            lock (_lock)
+            {
+                // For scoped services, we need to check if we already have an instance in this scope
+                if (!_requestScopes.TryGetValue(requestId, out var scope))
+                {
+                    scope = _provider.CreateScope();
+                    _requestScopes[requestId] = scope;
+                }
+
+                // Try to get from scope first
+                var existingService = scope.ServiceProvider.GetService(serviceType);
+                if (existingService != null)
+                    return existingService;
+
+                // Check if we already found an implementation for this type
+                if (_autoRegisteredTypes.TryGetValue(serviceType, out var cachedImplementationType))
+                {
+                    return CreateInstance(cachedImplementationType);
+                }
+
+                // Find the first implementation
+                var implementationType = FindFirstImplementation(serviceType);
+                if (implementationType == null)
+                    return null;
+
+                // Cache the mapping for future use
+                _autoRegisteredTypes[serviceType] = implementationType;
+
+                return CreateInstance(implementationType);
+            }
+        }
+
+        /// <summary>
+        /// Creates an instance of the specified type, handling dependency injection
+        /// </summary>
+        private static object? CreateInstance(Type implementationType)
+        {
+            try
+            {
+                // Try to create using the DI container first (in case it has dependencies)
+                if (_provider != null)
+                {
+                    try
+                    {
+                        return ActivatorUtilities.CreateInstance(_provider, implementationType);
+                    }
+                    catch
+                    {
+                        // If DI creation fails, fall back to direct instantiation
+                    }
+                }
+
+                // Fallback: create using default constructor
+                var instance = Activator.CreateInstance(implementationType);
+                
+                // If the instance inherits from InjectBase, dependencies will be injected automatically
+                // Otherwise, we need to manually inject dependencies if it has Injectable properties
+                if (instance != null && !typeof(InjectBase).IsAssignableFrom(implementationType))
+                {
+                    InjectDependencies(instance);
+                }
+
+                return instance;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Finds the first implementation of an interface in all loaded assemblies
+        /// </summary>
+        private static Type? FindFirstImplementation(Type interfaceType)
+        {
+            try
+            {
+                // Get all loaded assemblies (excluding system assemblies)
+                var assemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Where(a => !a.IsDynamic &&
+                               !a.FullName.StartsWith("System") &&
+                               !a.FullName.StartsWith("Microsoft") &&
+                               !a.FullName.StartsWith("netstandard") &&
+                               !a.FullName.StartsWith("mscorlib"))
+                    .ToList();
+
+                foreach (var assembly in assemblies)
+                {
+                    try
+                    {
+                        var implementation = assembly.GetTypes()
+                            .FirstOrDefault(type => type.IsClass &&
+                                                  !type.IsAbstract &&
+                                                  !type.IsInterface &&
+                                                  interfaceType.IsAssignableFrom(type));
+
+                        if (implementation != null)
+                            return implementation;
+                    }
+                    catch (ReflectionTypeLoadException)
+                    {
+                        // Skip assemblies that can't be loaded
+                        continue;
+                    }
+                    catch
+                    {
+                        // Skip any other assembly loading errors
+                        continue;
+                    }
+                }
+            }
+            catch
+            {
+                // If any error occurs, return null
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -200,7 +368,6 @@ namespace AutoInject
                 _requestScopes.Clear();
             }
         }
-
 
         /// <summary>
         /// Gets an ILogger instance for the specified type.

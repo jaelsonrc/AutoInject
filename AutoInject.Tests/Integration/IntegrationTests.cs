@@ -16,7 +16,7 @@ namespace AutoInject.Tests.Integration
             var services = new ServiceCollection();
             
             // Setup logging
-            services.AddLogging();
+          //  services.AddLogging();
             
             // Register dependencies
             services.AddScoped<ITestRepository, TestRepository>();

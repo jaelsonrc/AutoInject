@@ -12,7 +12,7 @@ namespace AutoInject.Tests
         public FactoryTests()
         {
             var services = new ServiceCollection();
-            services.AddLogging();
+          //  services.AddLogging();
             services.AddScoped<ITestRepository, TestRepository>();
             services.AddScoped<ITestEmailService, TestEmailService>();
             services.AddScoped<ITestNotificationService, TestNotificationService>();

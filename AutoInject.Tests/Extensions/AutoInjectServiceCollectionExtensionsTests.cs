@@ -14,7 +14,7 @@ namespace AutoInject.Tests.Extensions
         public AutoInjectServiceCollectionExtensionsTests()
         {
             _services = new ServiceCollection();
-            _services.AddLogging();
+         //   _services.AddLogging();
             _services.AddScoped<ITestRepository, TestRepository>();
             _services.AddScoped<ITestEmailService, TestEmailService>();
             _services.AddScoped<ITestNotificationService, TestNotificationService>();
@@ -47,6 +47,59 @@ namespace AutoInject.Tests.Extensions
             // Assert
             var testService = _serviceProvider.GetService<TestServiceWithAutoInject>();
             Assert.NotNull(testService);
+        }
+
+        [Fact]
+        public void AddInjectBaseClasses_WithAssembly_ShouldRegisterInjectBaseClassesAndDependencies()
+        {
+            // Arrange
+            var assembly = Assembly.GetAssembly(typeof(TestRepositoryBase))!;
+
+            // Act
+            _services.AddInjectBaseClasses(assembly);
+            _serviceProvider = _services.BuildServiceProvider();
+
+            // Assert
+            // Verify that InjectBase classes are registered
+            var testRepository = _serviceProvider.GetService<TestRepositoryBase>();
+            Assert.NotNull(testRepository);
+
+            // Verify that Injectable dependencies are automatically registered
+            var usuarioLogado = _serviceProvider.GetService<IUsuarioLogado>();
+            Assert.NotNull(usuarioLogado);
+
+            // Verify that the Injectable property is properly injected
+            Assert.NotNull(testRepository.UsuarioLogado);
+        }
+
+        [Fact]
+        public void AddInjectBaseClasses_WithCallingAssembly_ShouldRegisterInjectBaseClasses()
+        {
+            // Act
+            _services.AddInjectBaseClasses();
+            _serviceProvider = _services.BuildServiceProvider();
+
+            // Assert
+            var testRepository = _serviceProvider.GetService<TestRepositoryBase>();
+            Assert.NotNull(testRepository);
+        }
+
+        [Fact]
+        public void AddInjectBaseClasses_ShouldNotRegisterDuplicateServices()
+        {
+            // Arrange
+            var assembly = Assembly.GetAssembly(typeof(TestRepositoryBase))!;
+            
+            // Pre-register a service
+            _services.AddScoped<IUsuarioLogado, UsuarioLogadoImplementation>();
+
+            // Act
+            _services.AddInjectBaseClasses(assembly);
+            _serviceProvider = _services.BuildServiceProvider();
+
+            // Assert
+            var usuarioLogadoServices = _services.Where(s => s.ServiceType == typeof(IUsuarioLogado)).ToList();
+            Assert.Single(usuarioLogadoServices); // Should only have one registration
         }
 
         public void Dispose()

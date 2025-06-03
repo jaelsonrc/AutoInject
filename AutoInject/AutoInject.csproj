@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -7,17 +7,17 @@
     
     <!-- NuGet Package Information -->
     <PackageId>JZen.AutoInject</PackageId>
-    <Version>1.0.0</Version>
+    <Version>2.0.1</Version>
     <Authors>Jaelson RC</Authors>
     <Company>Jaelson RC</Company>
-    <Description>A lightweight library that brings attribute-based dependency injection to .NET, eliminating the need for constructor injection boilerplate. Use [AutoInject] and [Injectable] attributes to simplify your dependency injection.</Description>
-    <PackageTags>dependency-injection;di;autoinject;attributes;aspnetcore;dotnet;jaelsonrc</PackageTags>
+    <Description>Revolutionary Zero-Configuration Dependency Injection for .NET 8.0! Smart Auto-Registration eliminates manual service registration - just use app.UseFactoryDependencyInjection() and enjoy automatic discovery of implementations across all assemblies. Features [AutoInject] and [Injectable] attributes for clean, boilerplate-free dependency injection.</Description>
+    <PackageTags>dependency-injection;di;autoinject;attributes;aspnetcore;dotnet;jaelsonrc;injectbase;smart-registration;auto-discovery;zero-config</PackageTags>
     <PackageProjectUrl>https://github.com/jaelsonrc/AutoInject</PackageProjectUrl>
     <RepositoryUrl>https://github.com/jaelsonrc/AutoInject</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageReleaseNotes>Initial release of JZen.AutoInject library. Features include attribute-based dependency injection, automatic service registration, and seamless ASP.NET Core integration.</PackageReleaseNotes>
+    <PackageReleaseNotes>📚 AutoInject v2.0.1 - Documentation Fix! Corrected README with accurate API methods: Use app.UseFactoryDependencyInjection() (not UseAutoInject), and AddAutoInjectClasses() for [AutoInject] attribute classes. InjectBase inheritance requires zero configuration. All code examples now reflect the actual working API.</PackageReleaseNotes>
     
     <!-- Build Configuration -->
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>

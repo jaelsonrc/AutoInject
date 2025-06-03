@@ -2,290 +2,442 @@
 
 [![.NET 8.0](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![NuGet](https://img.shields.io/badge/NuGet-Coming%20Soon-orange.svg)](#)
+[![NuGet](https://img.shields.io/nuget/v/JZen.AutoInject.svg)](https://www.nuget.org/packages/JZen.AutoInject/)
 
+> **🎉 NEW v2.0: Smart Auto-Registration!**  
 > **Stop writing constructor injection boilerplate! 🛑**  
-> AutoInject is a lightweight library that brings **attribute-based dependency injection** to .NET, eliminating the need for constructor injection hell.
+> AutoInject **automatically discovers and registers** your dependencies using inheritance - zero manual registration needed!
 
-## 🎯 Why AutoInject?
+## 🧠 Smart Auto-Registration via InjectBase
 
-Tired of this? 😤
+**The future of dependency injection is here!** No more manual registration:
 
 ```csharp
-public class OrderService
-{
-    private readonly IRepository _repository;
-    private readonly IEmailService _emailService;
-    private readonly ILogger<OrderService> _logger;
-    private readonly IPaymentService _paymentService;
-    private readonly INotificationService _notificationService;
+// Program.cs - Just this! 🎯
+var builder = WebApplication.CreateBuilder(args);
+// No special setup needed for InjectBase! Factory auto-configures!
 
-    public OrderService(
-        IRepository repository,
-        IEmailService emailService,
-        ILogger<OrderService> logger,
-        IPaymentService paymentService,
-        INotificationService notificationService)
+var app = builder.Build();
+app.UseFactoryDependencyInjection(); // Configure AutoInject Factory
+app.Run();
+
+// Your service - Zero configuration needed! ✨
+public class UserService : InjectBase
+{
+    [Injectable] private readonly IUserRepository? _repository;     // Auto-found!
+    [Injectable] private readonly IEmailService? _emailService;     // Auto-registered!
+    
+    public async Task CreateUserAsync(string name)
     {
-        _repository = repository;
-        _emailService = emailService;
-        _logger = logger;
-        _paymentService = paymentService;
-        _notificationService = notificationService;
+        var user = new User { Name = name };
+        await _repository!.SaveAsync(user);           // Works automatically!
+        _emailService!.SendWelcomeEmail(user);        // No setup required!
     }
 }
 ```
 
-**With AutoInject, write this instead:** ✨
+**🎯 How Smart Auto-Registration Works:**
+1. 🔍 **Inherits from InjectBase** - Automatic dependency discovery
+2. 📝 **Auto-registers** implementations as Scoped services on first use
+3. 💉 **Injects** dependencies instantly using `[Injectable]` attributes
+4. 🚀 **Caches** mappings for blazing-fast performance
+5. 🧹 **Manages** scoping and disposal automatically
+
+**🆚 Before vs After:**
+
+| Before (Manual Hell) | After (InjectBase Auto-Registration) |
+|----------------------|--------------------------------------|
+| 50+ lines of registration | Zero registration needed |
+| Manual interface mapping | Automatic discovery |
+| Assembly scanning setup | Just inherit InjectBase |
+| Startup performance hit | Lazy, on-demand loading |
+| Maintenance nightmare | Self-maintaining |
+
+## 📋 Two Ways to Use AutoInject
+
+### 🌟 Method 1: InjectBase (Recommended - Zero Config!)
+
+Simply inherit from `InjectBase` - no registration needed:
 
 ```csharp
-[AutoInject]
-public class OrderService
-{
-    [Injectable] private readonly IRepository _repository;
-    [Injectable] private readonly IEmailService _emailService;
-    [Injectable] private readonly ILogger<OrderService> _logger;
-    [Injectable] private readonly IPaymentService _paymentService;
-    [Injectable] private readonly INotificationService _notificationService;
+// Program.cs - Minimal setup
+var app = builder.Build();
+app.UseFactoryDependencyInjection();
+app.Run();
 
-    // Clean constructor - no dependencies!
-    public OrderService() { }
+// Your service - Just inherit and use!
+public class OrderService : InjectBase
+{
+    [Injectable] private readonly IOrderRepository? _repository;
+    [Injectable] private readonly IEmailService? _emailService;
+    
+    public async Task ProcessOrderAsync(Order order)
+    {
+        await _repository!.SaveAsync(order);
+        _emailService!.SendConfirmation(order);
+    }
 }
 ```
 
-## 🌟 Key Features
+### 🔧 Method 2: [AutoInject] Attribute (For Existing Classes)
 
-- ✅ **Zero Boilerplate**: No more constructor injection bloat
-- ✅ **Attribute-Based**: Simple `[AutoInject]` and `[Injectable]` attributes
-- ✅ **ASP.NET Core Integration**: Seamless integration with built-in DI container
-- ✅ **Automatic Registration**: Auto-scan and register your classes
-- ✅ **Scoped Management**: Automatic scope management for web requests
-- ✅ **Logger Support**: Built-in logger injection support
-- ✅ **Performance Optimized**: Type caching for reflection operations
-- ✅ **Thread-Safe**: Safe for concurrent operations
+For classes you can't modify to inherit from InjectBase:
 
-## 📦 Installation
+```csharp
+// Program.cs - Register classes with [AutoInject]
+builder.Services.AddAutoInjectClasses(); // Scans for [AutoInject] classes
+var app = builder.Build();
+app.UseFactoryDependencyInjection();
+app.Run();
 
-```bash
-# Coming soon to NuGet
-Install-Package JZen.AutoInject
-```
-
-Or add the project reference:
-
-```xml
-<ProjectReference Include="path/to/AutoInject/AutoInject.csproj" />
+// Your existing class
+[AutoInject]
+public class LegacyService
+{
+    [Injectable] private readonly IRepository? _repository;
+    
+    public void DoSomething()
+    {
+        // Factory.InjectDependencies(this) called automatically
+        _repository!.Save(data);
+    }
+}
 ```
 
 ## 🚀 Quick Start
 
-### 1. Configure your services in `Program.cs`
+### 1. Install the Package
+```bash
+dotnet add package JZen.AutoInject
+```
 
+### 2. Configure (One Line!)
+
+For **InjectBase** classes (recommended):
 ```csharp
-using AutoInject.Extensions;
-
 var builder = WebApplication.CreateBuilder(args);
-
-// Register your services
-builder.Services.AddScoped<IRepository, Repository>();
-builder.Services.AddScoped<IEmailService, EmailService>();
-
-// 🔥 Auto-register all classes marked with [AutoInject]
-builder.Services.AddAutoInjectClasses(Assembly.GetExecutingAssembly());
+// No services registration needed!
 
 var app = builder.Build();
-
-// 🔥 Enable AutoInject
-app.UseFactoryDependencyInjection();
-
+app.UseFactoryDependencyInjection(); // 🚀 Factory configured!
 app.Run();
 ```
 
-### 2. Mark your classes with `[AutoInject]`
-
+For **[AutoInject]** classes:
 ```csharp
-using AutoInject.Attributes;
+var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddAutoInjectClasses(); // 🎯 Register classes with [AutoInject]
 
-[AutoInject]
-public class OrderService
+var app = builder.Build();
+app.UseFactoryDependencyInjection(); // 🚀 Factory configured!
+app.Run();
+```
+
+### 3. Use in Your Classes
+
+**Option A: InjectBase (Zero Setup)**
+```csharp
+public class ProductService : InjectBase
 {
-    [Injectable] private readonly IRepository _repository;
-    [Injectable] private readonly IEmailService _emailService;
-    [Injectable] private readonly ILogger<OrderService> _logger;
-
-    public async Task ProcessOrderAsync(Order order)
+    [Injectable] private readonly IProductRepository? _repository;
+    [Injectable] private readonly ICacheService? _cache;
+    
+    public async Task<Product> GetProductAsync(int id)
     {
-        _logger.LogInformation("Processing order {OrderId}", order.Id);
+        _logger.LogInformation("Getting product {Id}", id);
         
-        await _repository.SaveAsync(order);
-        await _emailService.SendConfirmationAsync(order.CustomerEmail);
+        var cached = _cache!.Get<Product>($"product_{id}");
+        if (cached != null) return cached;
         
-        _logger.LogInformation("Order {OrderId} processed successfully", order.Id);
+        var product = await _repository!.GetByIdAsync(id);
+        _cache.Set($"product_{id}", product);
+        
+        return product;
     }
 }
 ```
 
-### 3. Use your services normally
+**Option B: [AutoInject] Attribute**
+```csharp
+[AutoInject]
+public class ProductService
+{
+    [Injectable] private readonly IProductRepository? _repository;
+    [Injectable] private readonly ICacheService? _cache;
+    
+    // Dependencies injected automatically when created via DI container
+}
+```
 
+**That's it! No manual registration needed!** 🎉
+
+## 🎛️ Features
+
+### 🧠 Smart Auto-Registration
+- **Zero configuration** - InjectBase automatically finds implementations
+- **On-demand discovery** - Only registers what you actually use  
+- **Performance optimized** - Caches mappings for speed
+- **Cross-assembly support** - Works with any loaded assembly
+
+### 🎯 Two Integration Patterns
+- **InjectBase**: Automatic injection on construction (recommended)
+- **[AutoInject]**: Factory-based injection for existing classes
+
+### 🪵 Built-in Logging
+- Automatic `ILogger` injection via `InjectBase`
+- Type-safe logger instances
+- Zero configuration
+
+### ✅ Scoped Management
+- HTTP request scoping
+- Automatic disposal
+- Thread-safe operations
+
+### ✅ ASP.NET Core Integration
+- Works with existing DI container
+- Middleware support
+- Controller injection
+
+### ✅ Backward Compatibility
+- Mix with manual registrations
+- Existing code keeps working
+- Gradual migration support
+
+## 📋 Usage Examples
+
+### Basic Service with InjectBase
+```csharp
+public class EmailService : InjectBase
+{
+    [Injectable] private readonly IEmailProvider? _provider;
+    [Injectable] private readonly ITemplateEngine? _templates;
+    
+    public async Task SendAsync(string to, string subject, string body)
+    {
+        _logger.LogInformation("Sending email to {To}", to);
+        
+        var template = _templates!.Render(body);
+        await _provider!.SendAsync(to, subject, template);
+    }
+}
+```
+
+### Controller Integration
 ```csharp
 [ApiController]
 [Route("api/[controller]")]
-public class OrdersController : ControllerBase
+public class UsersController : ControllerBase
 {
-    private readonly OrderService _orderService;
-
-    public OrdersController(OrderService orderService)
-    {
-        _orderService = orderService;
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> CreateOrder([FromBody] Order order)
-    {
-        await _orderService.ProcessOrderAsync(order);
-        return Ok();
-    }
-}
-```
-
-## 📚 Advanced Usage
-
-### Inherit from `InjectBase` (Alternative Approach)
-
-```csharp
-using AutoInject;
-
-public class OrderService : InjectBase
-{
-    [Injectable] private readonly IRepository _repository;
-    [Injectable] private readonly IEmailService _emailService;
+    private readonly UserService _userService = new(); // InjectBase auto-injects
     
-    // Logger is automatically available as _logger
-    public void ProcessOrder()
+    [HttpPost]
+    public async Task<IActionResult> CreateUser(CreateUserRequest request)
     {
-        _logger.LogInformation("Processing order...");
-        // Your logic here
+        var user = await _userService.CreateUserAsync(request.Name);
+        return Ok(user);
     }
 }
 ```
 
-### Automatic Interface Registration
-
+### Background Service
 ```csharp
-// Register all interfaces from a specific namespace
-builder.Services.AddScopedInjection("MyApp.Application.UseCases");
+public class OrderProcessingService : BackgroundService, InjectBase
+{
+    [Injectable] private readonly IOrderRepository? _orders;
+    [Injectable] private readonly IPaymentService? _payments;
+    
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (!stoppingToken.IsCancellationRequested)
+        {
+            var pendingOrders = await _orders!.GetPendingAsync();
+            
+            foreach (var order in pendingOrders)
+            {
+                await _payments!.ProcessAsync(order);
+                _logger.LogInformation("Processed order {OrderId}", order.Id);
+            }
+            
+            await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
+        }
+    }
+}
 ```
 
-### Multiple Assembly Registration
+## 🔧 Advanced Configuration
 
+### Mixed Registration
 ```csharp
-var assemblies = new[] 
-{ 
-    Assembly.GetExecutingAssembly(),
-    typeof(SomeOtherClass).Assembly 
-};
+// Program.cs - Mix manual and auto registration
+builder.Services.AddScoped<ISpecialService, CustomImplementation>(); // Manual registration
+// InjectBase classes will auto-register their dependencies
 
+public class MyService : InjectBase
+{
+    [Injectable] private readonly ISpecialService? _special;      // Uses manual registration
+    [Injectable] private readonly IRegularService? _regular;     // Auto-registered
+}
+```
+
+### Non-Web Applications
+```csharp
+// For console apps, background services, etc.
+var services = new ServiceCollection();
+services.AddLogging();
+
+var serviceProvider = services.BuildServiceProvider();
+Factory.Configure(serviceProvider);
+
+// Now you can use InjectBase classes
+var myService = new MyService(); // Dependencies auto-injected
+```
+
+### Manual Injection
+```csharp
+public class LegacyClass
+{
+    [Injectable] private readonly IRepository? _repository;
+    
+    public LegacyClass()
+    {
+        Factory.InjectDependencies(this); // Manual injection
+    }
+}
+```
+
+### Custom Assembly Scanning for [AutoInject]
+```csharp
+// Scan specific assemblies for [AutoInject] classes
+builder.Services.AddAutoInjectClasses(Assembly.GetExecutingAssembly());
+builder.Services.AddAutoInjectClasses(typeof(SomeExternalClass).Assembly);
+
+// Or scan multiple assemblies
+var assemblies = new[] { Assembly.GetExecutingAssembly(), typeof(ExternalService).Assembly };
 builder.Services.AddAutoInjectClasses(assemblies);
 ```
 
-### Custom Service Lifetimes
+## 🎯 When to Use AutoInject
 
+### ✅ Perfect For:
+- **Rapid prototyping** - Get up and running fast
+- **Clean architecture** - Focus on business logic  
+- **Large applications** - Reduce boilerplate significantly
+- **Convention over configuration** - Sensible defaults
+
+### ⚠️ Consider Alternatives When:
+- You need multiple implementations of the same interface
+- Complex lifetime management requirements (Singleton, custom scopes)
+- Performance-critical applications with strict DI requirements
+- You prefer explicit registration for all services
+
+## 🔄 Migration Guide
+
+### 🎉 Upgrading to v2.0
+
+v2.0 is **100% backward compatible**. Your existing code continues to work unchanged.
+
+**Recommended new setup:**
 ```csharp
-// Register as Singleton
-builder.Services.AddAutoInjectClasses(
-    Assembly.GetExecutingAssembly(), 
-    ServiceLifetime.Singleton
-);
-```
+// Program.cs - v2.0 InjectBase (Zero registration!)
+var app = builder.Build();
+app.UseFactoryDependencyInjection(); // Just this line!
+app.Run();
 
-## 🔧 How It Works
-
-AutoInject uses a combination of:
-
-1. **Reflection**: To discover types and properties marked with attributes
-2. **Custom Factory**: Creates instances and injects dependencies
-3. **Interceptors**: Automatically process classes during instantiation
-4. **Middleware**: Manages scoped services lifecycle in web applications
-5. **Caching**: Optimizes reflection operations for better performance
-
-### Architecture Overview
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   [AutoInject]  │───▶│     Factory     │───▶│  DI Container   │
-│     Classes     │    │   + Interceptor │    │   (ASP.NET)     │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                        │                        │
-         ▼                        ▼                        ▼
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   [Injectable]  │    │   Auto-Factory  │    │   Scope Mgmt    │
-│   Properties    │    │   Registration  │    │   Middleware    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-```
-
-## 🎯 Best Practices
-
-### ✅ DO
-
-```csharp
-[AutoInject]
-public class UserService
+// Your service - Just inherit InjectBase
+public class MyService : InjectBase
 {
-    [Injectable] private readonly IUserRepository _userRepository;
-    [Injectable] private readonly ILogger<UserService> _logger;
-    
-    // Use private readonly fields
-    // Mark with [Injectable]
-    // Keep constructors clean
+    [Injectable] private readonly IRepository? _repository; // Auto-discovered!
 }
 ```
 
-### ❌ DON'T
+**For [AutoInject] classes:**
+```csharp
+// Program.cs - v2.0 with [AutoInject] support
+builder.Services.AddAutoInjectClasses(); // Register [AutoInject] classes
+app.UseFactoryDependencyInjection();
+```
+
+### ⚠️ Obsolete Methods
+
+The following methods are now obsolete and will be removed in v3.0:
 
 ```csharp
-[AutoInject]
-public class UserService
+// ❌ Obsolete - Don't use these anymore
+services.AddInjectBaseClasses(assembly);
+services.AddInjectBaseClasses(assemblies);  
+services.AddInjectBaseClasses();
+```
+
+**Migration is simple:**
+```csharp
+// Before - Manual registration (obsolete)
+services.AddInjectBaseClasses(Assembly.GetExecutingAssembly());
+
+// After - No registration needed for InjectBase!
+// Just use: app.UseFactoryDependencyInjection();
+
+// OR for [AutoInject] classes:
+services.AddAutoInjectClasses(); // Replaces AddInjectBaseClasses
+```
+
+### From Constructor Injection
+```csharp
+// Before
+public class OrderService
 {
-    [Injectable] public IUserRepository UserRepository; // Don't use public fields
-    [Injectable] private ILogger<UserService> _logger;  // Don't use mutable fields
+    private readonly IRepository _repo;
+    private readonly IEmailService _email;
     
-    // Don't mix constructor injection with AutoInject
-    public UserService(ISomeService service) { }
+    public OrderService(IRepository repo, IEmailService email)
+    {
+        _repo = repo;
+        _email = email;
+    }
+}
+
+// After
+public class OrderService : InjectBase
+{
+    [Injectable] private readonly IRepository? _repo;
+    [Injectable] private readonly IEmailService? _email;
 }
 ```
 
-## 🔍 Comparison
+### From Manual DI Registration
+```csharp
+// Before - Program.cs (50+ lines)
+services.AddScoped<IUserRepository, UserRepository>();
+services.AddScoped<IEmailService, EmailService>();
+services.AddScoped<INotificationService, NotificationService>();
+// ... dozens more registrations
 
-| Feature | Constructor Injection | AutoInject |
-|---------|---------------------|------------|
-| **Boilerplate Code** | High 📈 | Minimal ✨ |
-| **Readability** | Cluttered 😵 | Clean 🧹 |
-| **Refactoring** | Painful 😤 | Easy 🎯 |
-| **Performance** | Faster 🏃‍♂️ | Slightly Slower 🚶‍♂️ |
-| **Learning Curve** | Standard 📚 | Minimal 🎓 |
+// After - Program.cs (1 line)
+app.UseFactoryDependencyInjection(); // InjectBase auto-handles everything!
+```
+
+## 📊 Performance
+
+- **Startup**: Minimal overhead, lazy discovery
+- **Runtime**: Cached type mappings for fast resolution
+- **Memory**: Efficient scoping and disposal  
+- **Throughput**: Comparable to native DI container
 
 ## 🤝 Contributing
 
-We welcome contributions! Please feel free to submit a Pull Request.
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙋‍♂️ Support
+## 🙏 Acknowledgments
 
-- 📧 Email: [jaelsonrc@hotmail.com]
-- 🐛 Issues: [GitHub Issues](https://github.com/jaelsonrc/AutoInject/issues)
-- 💬 Discussions: [GitHub Discussions](https://github.com/jaesonrc/AutoInject/discussions)
+- Inspired by the need for cleaner dependency injection in .NET
+- Built on top of Microsoft.Extensions.DependencyInjection
+- Community feedback and contributions
 
 ---
 
-**Made with ❤️ by developers who hate constructor injection boilerplate!**
+**Made with ❤️ for the .NET community**
 
-> "Life's too short for constructor injection hell" - Anonymous Developer 
+[⭐ Star this repo](https://github.com/jaelsonrc/AutoInject) if you find it useful!

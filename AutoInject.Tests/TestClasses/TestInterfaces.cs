@@ -16,6 +16,18 @@ namespace AutoInject.Tests.TestClasses
         void SendNotification(string message);
     }
 
+    // New interfaces for InjectBase testing
+    public interface IUsuarioLogado
+    {
+        string GetUsuarioId();
+        string GetUsuarioNome();
+    }
+
+    public interface ITestService
+    {
+        void DoSomething();
+    }
+
     // Test implementations
     public class TestRepository : ITestRepository
     {
@@ -36,6 +48,28 @@ namespace AutoInject.Tests.TestClasses
     public class TestNotificationService : ITestNotificationService
     {
         public void SendNotification(string message)
+        {
+            // Test implementation
+        }
+    }
+
+    // New implementations for InjectBase testing
+    public class UsuarioLogadoImplementation : IUsuarioLogado
+    {
+        public string GetUsuarioId()
+        {
+            return "123";
+        }
+
+        public string GetUsuarioNome()
+        {
+            return "Test User";
+        }
+    }
+
+    public class TestServiceImplementation : ITestService
+    {
+        public void DoSomething()
         {
             // Test implementation
         }
